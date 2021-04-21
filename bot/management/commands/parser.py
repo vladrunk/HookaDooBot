@@ -211,9 +211,7 @@ def start(req=None):
     logger.info('Парсим сайты из списка')
     for site in sites:
         tabaks[site.url] = []
-    logger.info('Начинаем парсить')
-    __parse_kalyan_in_ua(tabaks['https://kalyan.in.ua/'])
-    __parse_kalyan_od_ua(tabaks['https://kalyan.od.ua/'])
+        globals()[f'__parse_{site.title.replace(".", "_")}'](tabaks[site.url])
     logger.info('Закончили парсить')
     logger.info('Проходимся по каждому спарсеному сайту')
     for site, tabaks_on_site in tabaks.items():
@@ -241,17 +239,6 @@ def start(req=None):
                 site=sites.get(url=site),
                 title_on_site=tabak['name'],
             )
-    # tabaks_in_db = Tobacco.objects.all()
-    # for t in tabaks_in_db:
-    #     weights = t.weight
-    #     weights = weights.split(',')
-    #     weights = [int(w) for w in weights if w.isdigit()]
-    #     weights = list(set(weights))
-    #     weights.sort(key=lambda x: x)
-    #     weights = map(lambda x: str(x), weights)
-    #     weights = ','.join(weights)
-    #     t.weight = weights
-    #     t.save()
 
 
 class Command(BaseCommand):
