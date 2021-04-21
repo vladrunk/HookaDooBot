@@ -117,13 +117,11 @@ def split_long_text(text):
 
 
 def delete_message(m):
-    logger.debug(f'[{m.chat.id}]|{json_to_str(m.json)}')
     logger.info(f'[{m.chat.id}]|Удаляем сообщение.')
     bot.delete_message(
         chat_id=m.chat.id,
         message_id=m.message_id,
     )
-    logger.info(f'[{m.chat.id}]|Удаляем сообщение — готово.')
 
 
 def check_reply_to_message(m):
@@ -233,7 +231,6 @@ def btn_agree_search(search):
 
 @bot.callback_query_handler(func=lambda call: CALLBACKS['start_search'] == call.data.split('|')[0])
 def cb_start_search(call):
-    logger.debug(f'[{call.message.chat.id}]|{json_to_str(call.message.json)}')
     logger.info(f'[{call.message.chat.id}]|"Начать поиск". Процесс выбора продукта.')
     search = Search.objects.create(
         search_id=generate(ascii_letters[:] + digits[:], 10),
@@ -251,12 +248,10 @@ def cb_start_search(call):
         reply_markup=btns_choose_product(search),
         parse_mode='MarkdownV2',
     )
-    logger.info(f'[{call.message.chat.id}]|Отправляем сообщение с выбором продукта — готово.')
 
 
 @bot.callback_query_handler(func=lambda call: CALLBACKS['tabak'] == call.data.split('|')[0])
 def cb_tabak(call):
-    logger.debug(f'[{call.message.chat.id}]|{json_to_str(call.message.json)}')
     logger.info(f'[{call.message.chat.id}]|Процесс выбора марки табака.')
     search = Search.objects.get(
         search_id=call.data.split('|')[1],
@@ -274,12 +269,10 @@ def cb_tabak(call):
         reply_markup=btns_choose_company(search),
         parse_mode='MarkdownV2',
     )
-    logger.info(f'[{call.message.chat.id}]|Отправляем сообщение с выбором марки табака — готово.')
 
 
 @bot.callback_query_handler(func=lambda call: CALLBACKS['charcoal'] == call.data.split('|')[0])
 def cb_charcoal(call):
-    logger.debug(f'[{call.message.chat.id}]|{json_to_str(call.message.json)}')
     logger.info(f'[{call.message.chat.id}]|Процесс выбора угля.')
     text = 'Данный функционал еще в разработке'
     logger.info(f'[{call.message.chat.id}]|Отправляем уведомление, что уголь еще в разработке.')
@@ -288,12 +281,10 @@ def cb_charcoal(call):
         text=text,
         show_alert=True,
     )
-    logger.info(f'[{call.message.chat.id}]|Отправляем уведомление, что уголь еще в разработке — готово.')
 
 
 @bot.callback_query_handler(func=lambda call: CALLBACKS['extra'] == call.data.split('|')[0])
 def cb_extra(call):
-    logger.debug(f'[{call.message.chat.id}]|{json_to_str(call.message.json)}')
     logger.info(f'[{call.message.chat.id}]|Процесс выбора экстры.')
     search = Search.objects.get(
         search_id=call.data.split('|')[1],
@@ -314,12 +305,10 @@ def cb_extra(call):
         reply_markup=btns_choose_extra(search),
         parse_mode='MarkdownV2',
     )
-    logger.info(f'[{call.message.chat.id}]|Отправляем сообщение с выбором экстры — готово.')
 
 
 @bot.callback_query_handler(func=lambda call: CALLBACKS['choose_flavor'] == call.data.split('|')[0])
 def cb_choose_flavor(call):
-    logger.debug(f'[{call.message.chat.id}]|{json_to_str(call.message.json)}')
     logger.info(f'[{call.message.chat.id}]|Процесс выбора вкуса табака.')
     search = Search.objects.get(
         search_id=call.data.split('|')[1],
@@ -340,12 +329,10 @@ def cb_choose_flavor(call):
         parse_mode='MarkdownV2',
         reply_markup=markup_force_reply,
     )
-    logger.info(f'[{call.message.chat.id}]|Отправляем сообщение с просьбой написать искомый вкус — готово.')
 
 
 @bot.callback_query_handler(func=lambda call: CALLBACKS['result'] == call.data.split('|')[0])
 def cb_result(call):
-    logger.debug(f'[{call.message.chat.id}]|{json_to_str(call.message.json)}')
     logger.info(f'[{call.message.chat.id}]|Процесс старта поиска табака в базе сайтов.')
     text_q = "Производим поиск по базе сайтов."
     logger.info(f'[{call.message.chat.id}]|Отправляем уведомление, что поиск начат.')
@@ -409,7 +396,6 @@ def cb_result(call):
 
 @bot.message_handler(commands=['start'])
 def cmd_start(m):
-    logger.debug(f'[{m.chat.id}]|{json_to_str(m.json)}')
     logger.info(f'[{m.chat.id}]|Получили команду /start.')
     _, is_new = User.objects.get_or_create(
         uid=m.chat.id,
@@ -432,12 +418,10 @@ def cmd_start(m):
         text=text,
         reply_markup=btn_start_search(),
     )
-    logger.info(f'[{m.chat.id}]|Отправляем ответ на /start — готово.')
 
 
 @bot.message_handler(func=check_reply_to_message)
 def msg_agree_search(m):
-    logger.debug(f'[{m.chat.id}]|{json_to_str(m.json)}')
     logger.info(f'[{m.chat.id}]|Процесс подтверждения поиска табака.')
     m_edit = m.reply_to_message
     search_id = m_edit.text.splitlines()[0].split(': ')[1]
@@ -459,11 +443,9 @@ def msg_agree_search(m):
         reply_markup=btn_agree_search(search),
         parse_mode='MarkdownV2',
     )
-    logger.info(f'[{m.chat.id}]|Отправляем сообщение для подтверждения — готово.')
 
 
 @bot.message_handler(func=lambda m: True)
 def any_msg(m):
-    logger.debug(f'[{m.chat.id}]|{json_to_str(m.json)}')
     logger.info(f'[{m.chat.id}]|Пришло сообщение которое не обрабатывается ботом.')
     delete_message(m)
