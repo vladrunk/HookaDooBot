@@ -1,4 +1,5 @@
 from django.db import models
+from django.template.defaultfilters import truncatechars
 
 
 class User(models.Model):
@@ -176,6 +177,9 @@ class Search(models.Model):
 
     def __str__(self):
         return f'{self.user} {self.step}'
+
+    def short_result(self):
+        return truncatechars(self.result, 35)
 
     class Meta:
         verbose_name = 'Поиск'
