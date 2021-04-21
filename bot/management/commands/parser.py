@@ -208,7 +208,7 @@ def start(req=None):
         )
     sites = Site.objects.all()
     tabaks = {}
-    logger.info('Формируем заготовку для списка фирм табаков с сайтов')
+    logger.info('Парсим сайты из списка')
     for site in sites:
         tabaks[site.url] = []
     logger.info('Начинаем парсить')

@@ -22,7 +22,7 @@ def __get_soup(url: str, q: str, uid: int) -> BeautifulSoup:
     full_url = url.format(query=urllib.parse.quote_plus(q))
     logger.info(f'[{uid}]|Переходим по ссылке {full_url}.')
     response = requests.get(url=full_url, headers=headers)
-    logger.debug(f'Код ответа запроса на {response.url} : {response.status_code}')
+    logger.info(f'Код ответа запроса на {response.url} : {response.status_code}')
     logger.info(f'[{uid}]|Парсим полученную старничку.')
     soup = BeautifulSoup(response.text, 'html.parser')
     return soup
@@ -35,7 +35,7 @@ def __parse_kalyan_in_ua(soup, uid: int):
     if soup.find('p', attrs={'class': 'misspell'}):
         logger.info(f'[{uid}]|Табаки отсутствуют.')
         return result
-    logger.info(f'[{uid}]|Парсим наличие табаков. Если табак в наличии - сохраняем.')
+    logger.info(f'[{uid}]|Парсим наличие табаков.')
     for product in products:
         if not product.find('p', attrs={'class': 'availability'}):
             result.append({
@@ -56,7 +56,7 @@ def __parse_kalyan_od_ua(soup, uid: int):
         return result
     else:
         products = products.find_all('div', attrs={'class': 'products__item'})
-    logger.info(f'[{uid}]|Парсим наличие табаков. Если табак в наличии - сохраняем.')
+    logger.info(f'[{uid}]|Парсим наличие табаков.')
     for product in products:
         sold = product.find('div', attrs={'class': 'products__item-stickers'})
         sold = sold.find('mark', attrs={'class': 'products__item-mark--catch'})
