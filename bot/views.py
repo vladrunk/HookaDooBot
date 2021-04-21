@@ -3,10 +3,13 @@ from itertools import zip_longest
 from string import ascii_letters, digits
 from json import dumps
 
+import logging
 from loguru import logger
+from telebot import logger as bot_logger
+from notifiers.logging import NotificationHandler
 from nanoid import generate
 from telebot import TeleBot, util
-from telebot import logger as bot_logger
+from telebot.apihelper import ApiTelegramException
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, Update, ForceReply
 
 from django.http import JsonResponse
@@ -16,14 +19,51 @@ from django.views.decorators.http import require_GET
 
 from HookaDooBot.settings import LOG_IS_SET
 from .models import User, Search, Tobacco
-from .services.cfg import WEBHOOK_URL, BOT_TOKEN
+from .services.cfg import WEBHOOK_URL, BOT_TOKEN, NOTIFY_BOT_TOKEN, NOTIFY_CHAT_ID
 from .services.finder import start as finder_start
 
 bot = TeleBot(token=BOT_TOKEN)
-# bot_logger.setLevel(10)
+
+
+class InterceptHandler(logging.Handler):
+    def emit(self, record):
+        # Get corresponding Loguru level if it exists
+        try:
+            level = logger.level(record.levelname).name
+        except ValueError:
+            level = record.levelno
+
+        # Find caller from where originated the logged message
+        frame, depth = logging.currentframe(), 2
+        while frame.f_code.co_filename == logging.__file__:
+            frame = frame.f_back
+            depth += 1
+
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
 
 if not LOG_IS_SET:
-    logger.add('./logs/{time}.log', encoding='UTF-8')
+    handler = NotificationHandler(
+        "telegram",
+        defaults={
+            "token": NOTIFY_BOT_TOKEN,
+            "chat_id": NOTIFY_CHAT_ID
+        }
+    )
+    logger.add(handler, level=logging.WARNING)
+
+    bot_logger.setLevel(logging.WARNING)
+    bot_logger.removeHandler(bot_logger.handlers[0])
+    bot_logger.addHandler(InterceptHandler())
+
+    logger.add('./logs/{time:YYYY-MM-DD_HH-mm-ss}.log',
+               encoding='UTF-8',
+               backtrace=True,
+               diagnose=True,
+               rotation='10 MB',
+               compression='zip',
+               )
+
     LOG_IS_SET = True
 
 
@@ -41,20 +81,20 @@ class BotUpdate(View):
     @staticmethod
     def get(request):
         logger.warning('Запрос на установку webhook-а.')
-        logger.warning('Получаем информацию о webhook-е со стороны Telegram.')
+        logger.info('Получаем информацию о webhook-е со стороны Telegram.')
         webhook_prev_url = bot.get_webhook_info().url
         webhook_url = WEBHOOK_URL.format(
             domain=request.headers['HOST']
             if not request.headers.get('X-Original-Host') else request.headers['X-Original-Host']
         )
         sleep(1)
-        logger.warning('Сверяем url нашего webhook-а c url полученным от Telegram.')
+        logger.info('Сверяем url нашего webhook-а c url полученным от Telegram.')
         if webhook_url != webhook_prev_url:
             if webhook_prev_url:
-                logger.warning('Удаляем старый webhook на Telegram')
+                logger.info('Удаляем старый webhook на Telegram')
                 bot.remove_webhook()
                 sleep(1)
-            logger.warning('Устанавливаем свой webhook на Telegram.')
+            logger.info('Устанавливаем свой webhook на Telegram.')
             res = bot.set_webhook(
                 url=webhook_url,
                 max_connections=100,
@@ -407,7 +447,7 @@ def cmd_start(m):
     )
 
     if is_new:
-        logger.info(f'[{m.chat.id}]|Новый юзер')
+        logger.warning(f'[{m.chat.id}]|Новый юзер')
         text = f'Добро пожаловать, {m.chat.first_name} \N{grinning face}'
     else:
         logger.info(f'[{m.chat.id}]|Юзер уже есть в БД')
