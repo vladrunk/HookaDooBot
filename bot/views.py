@@ -390,20 +390,25 @@ def cb_result(call):
         )
     header_text = f'{SEARCH_ID_TEXT.format(id=search.search_id)}' \
                   f'Ваш запрос: {search.company} {search.flavor} {search.extra}\n\n'
-    find_text = finder_start(
-        company=search.company, flavor=search.flavor, extra=search.extra, uid=call.message.chat.id
-    )
-    if find_text == '':
-        find_text = '\nПо вашему запросу табака в наличии нет'
-    search.result = find_text
-    search.save()
-    if len(find_text) > 4500:
-        logger.info(f'[{call.message.chat.id}]|Результат поиска длинее 4500 символов. Делим результат на части.')
-        text = split_long_text(header_text + find_text)
-    else:
-        text = header_text + find_text
-    if isinstance(text, str):
-        logger.info(f'[{call.message.chat.id}]|Отправляем результат поиска.')
+
+    # Тупая заглушка на ошибку в процессе поиска
+    # Переделай, когда будет время
+    try:
+        find_result_text = finder_start(
+            company=search.company, flavor=search.flavor, extra=search.extra, uid=call.message.chat.id
+        )
+        find_error = False
+    except Exception as e:
+        find_result_text = 'Ошибка'
+        find_error = e
+
+    if find_result_text == '':
+        find_result_text = '\nПо вашему запросу табака в наличии нет'
+
+    if find_error:
+        logger.error(f'[{call.message.chat.id}]|Ошибка во время поиска. Ошибка: {find_error}')
+        text = header_text + 'во время поиска произошла ошибка. ' \
+                             'Обратитесь, пожалуйста, к ажминистратору @vladrunk с указанием ID поиска.'
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
@@ -411,29 +416,43 @@ def cb_result(call):
             parse_mode='Markdown',
             disable_web_page_preview=True,
         )
-        logger.info(f'[{call.message.chat.id}]|Отправляем результат поиска — готово.')
     else:
-        logger.info(f'[{call.message.chat.id}]|Отправляем результат поиска #1.')
-        bot.edit_message_text(
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id,
-            text=text[0],
-            parse_mode='Markdown',
-            disable_web_page_preview=True,
-        )
-        logger.info(f'[{call.message.chat.id}]|Отправляем результат поиска #1 — готово.')
-        for i, t in enumerate(text):
-            if i == 0:
-                continue
-            logger.info(f'[{call.message.chat.id}]|Отправляем результат поиска #{i + 1}.')
-            if len(t) > 1:
-                bot.send_message(
-                    chat_id=call.message.chat.id,
-                    text=t,
-                    parse_mode='Markdown',
-                    disable_web_page_preview=True,
-                )
-            logger.info(f'[{call.message.chat.id}]|Отправляем результат поиска #{i + 1} — готово.')
+        search.result = find_result_text
+        search.save()
+        if len(find_result_text) > 4500:
+            logger.info(f'[{call.message.chat.id}]|Результат поиска длинее 4500 символов. Делим результат на части.')
+            text = split_long_text(header_text + find_result_text)
+        else:
+            text = header_text + find_result_text
+        if isinstance(text, str):
+            logger.info(f'[{call.message.chat.id}]|Отправляем результат поиска.')
+            bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=text,
+                parse_mode='Markdown',
+                disable_web_page_preview=True,
+            )
+        else:
+            logger.info(f'[{call.message.chat.id}]|Отправляем результат поиска #1.')
+            bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=text[0],
+                parse_mode='Markdown',
+                disable_web_page_preview=True,
+            )
+            for i, t in enumerate(text):
+                if i == 0:
+                    continue
+                if len(t) > 1:
+                    logger.info(f'[{call.message.chat.id}]|Отправляем результат поиска #{i + 1}.')
+                    bot.send_message(
+                        chat_id=call.message.chat.id,
+                        text=t,
+                        parse_mode='Markdown',
+                        disable_web_page_preview=True,
+                    )
 
     cmd_start(call.message)
 
