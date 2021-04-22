@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = environ.get('DJANGO_SECRET')
 
-DEBUG = 1
+DEBUG = 0
 
 if DEBUG:
     ALLOWED_HOSTS = ['*', ]
