@@ -376,14 +376,18 @@ def cb_result(call):
     logger.info(f'[{call.message.chat.id}]|Процесс старта поиска табака в базе сайтов.')
     text_q = "Производим поиск по базе сайтов."
     logger.info(f'[{call.message.chat.id}]|Отправляем уведомление, что поиск начат.')
-    bot.answer_callback_query(
-        callback_query_id=call.id,
-        text=text_q,
-    )
-    logger.info(f'[{call.message.chat.id}]|Отправляем уведомление, что поиск начат — готово.')
-    search = Search.objects.get(
-        search_id=call.data.split('|')[1],
-    )
+    try:
+        bot.answer_callback_query(
+            callback_query_id=call.id,
+            text=text_q,
+            cache_time=60,
+        )
+    except ApiTelegramException as e:
+        logger.info(f'[{call.message.chat.id}]|Не удалось отправить уведомлениео начале поиска. Ошибка: {e}')
+    finally:
+        search = Search.objects.get(
+            search_id=call.data.split('|')[1],
+        )
     header_text = f'{SEARCH_ID_TEXT.format(id=search.search_id)}' \
                   f'Ваш запрос: {search.company} {search.flavor} {search.extra}\n\n'
     find_text = finder_start(
